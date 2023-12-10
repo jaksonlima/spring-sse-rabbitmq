@@ -1,12 +1,13 @@
 package com.br.spring.springserversendevent.main;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PreDestroy;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -35,8 +36,8 @@ public class SseRabbitMQSubscriber {
         this.amqpAdmin = Objects.requireNonNull(amqpAdmin);
     }
 
-    @PreDestroy
-    public void onDestroy() {
+    @EventListener(ContextClosedEvent.class)
+    public void deleteQueue() {
         amqpAdmin.deleteQueue(queue);
     }
 
