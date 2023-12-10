@@ -1,6 +1,8 @@
 package com.br.spring.springserversendevent.main;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -19,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Component
 public class SseRabbitMQSubscriber {
 
+    private static final Logger log = LoggerFactory.getLogger(SseRabbitMQSubscriber.class);
     private static final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String queue = "sse.queue.%s".formatted(UUID.randomUUID());
@@ -39,6 +42,8 @@ public class SseRabbitMQSubscriber {
     @EventListener(ContextClosedEvent.class)
     public void deleteQueue() {
         amqpAdmin.deleteQueue(queue);
+
+        log.info("queue: %s removed".formatted(queue));
     }
 
     @Bean
@@ -93,9 +98,11 @@ public class SseRabbitMQSubscriber {
 
                         emitters.remove(emitter);
 
-                        e.printStackTrace();
+                        log.error(e.getMessage());
                     }
                 }
+
+                log.warn("without listeners of type SseEmitter, message: %s".formatted(converted));
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -104,7 +111,11 @@ public class SseRabbitMQSubscriber {
     }
 
     public void publishMessage(final byte[] message) {
-        rabbitTemplate.convertAndSend(exchange, "", message);
+        try {
+            rabbitTemplate.convertAndSend(exchange, "", message);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
     }
 
     public SseEmitter subscribe() {
