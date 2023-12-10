@@ -41,9 +41,13 @@ public class SseRabbitMQSubscriber {
 
     @EventListener(ContextClosedEvent.class)
     public void deleteQueue() {
-        amqpAdmin.deleteQueue(queue);
+        final var deletedQueue = amqpAdmin.deleteQueue(queue);
 
-        log.info("queue: %s removed".formatted(queue));
+        if (deletedQueue) {
+            log.info("removed queue: %s".formatted(queue));
+        } else {
+            log.error("failed removed queue: %s".formatted(queue));
+        }
     }
 
     @Bean
